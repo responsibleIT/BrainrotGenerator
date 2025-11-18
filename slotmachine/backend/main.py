@@ -108,7 +108,7 @@ except ImportError:
     print("[GPIO] gpiozero or pigpio not available; GPIO buttons disabled.")
 
 def generate_prompt_and_name(animal: str, fruit: str, object: str, retries: int = 3):
-    user_block = f"Animal: {animal}\\Fruit: {fruit}\\nObject: {object}\\n"
+    user_block = f"Animal: {animal}\\Fruit: {fruit}\\Object: {object}\\n"
     last_err = None
     for attempt in range(1, retries+1):
         try:
@@ -192,25 +192,60 @@ async def ws_endpoint(ws: WebSocket):
                     if all(not s for s in state["spinning"]):
                         await asyncio.sleep(0.1)
                         await broadcast({"type":"all_stopped","result":state["result"]})
+                        
+            elif data.get("type") == "start_generation":
+                # Handshake: frontend confirms all reels stopped and ready to generate
+                print(f"[Handshake] Received start_generation. State: spinning={state['spinning']}, result={state['result']}")
+                if all(not s for s in state["spinning"]) and all(r is not None for r in state["result"]):
+                    print(f"[Handshake] Starting generation for {state['result']}")
+                    try:
+                        animal, fruit, obj = state["result"]
+                        await broadcast({"type":"generation_started"})
+                        
+                        # Generate prompt with retry logic
                         try:
-                            animal, fruit, obj = state["result"]
                             italian_name, dalle_prompt = generate_prompt_and_name(
-                                "Player", animal, fruit or obj
+                                animal, fruit, obj
                             )
-                            img_path = generate_image(dalle_prompt)
-                            url = "/static/generated/" + os.path.basename(img_path)
-                            entry = {
-                                "url": url,
-                                "italian_name": italian_name,
-                                "prompt": dalle_prompt,
-                                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            }
-                            manifest_path = os.path.join("frontend","generated","manifest.jsonl")
-                            with open(manifest_path,"a",encoding="utf-8") as mf:
-                                mf.write(json.dumps(entry)+"\n")
-                            await broadcast({"type":"image_ready","url":url,"prompt":dalle_prompt,"italian_name":italian_name})
                         except Exception as e:
-                            await broadcast({"type":"error","message":str(e)})
+                            print(f"[ERROR] Prompt generation failed: {e}")
+                            await broadcast({"type":"error","message":f"Failed to generate prompt: {str(e)}"})
+                            # Reset state to allow retry
+                            state["spinning"] = [True, True, True]
+                            state["result"] = [None, None, None]
+                            continue
+                        
+                        # Generate image with better error handling
+                        try:
+                            img_path = generate_image(dalle_prompt)
+                        except Exception as e:
+                            print(f"[ERROR] Image generation failed: {e}")
+                            await broadcast({"type":"error","message":f"Failed to generate image: {str(e)}"})
+                            # Reset state to allow retry
+                            state["spinning"] = [True, True, True]
+                            state["result"] = [None, None, None]
+                            continue
+                        
+                        url = "/static/generated/" + os.path.basename(img_path)
+                        entry = {
+                            "url": url,
+                            "italian_name": italian_name,
+                            "prompt": dalle_prompt,
+                            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        }
+                        manifest_path = os.path.join("frontend","generated","manifest.jsonl")
+                        with open(manifest_path,"a",encoding="utf-8") as mf:
+                            mf.write(json.dumps(entry)+"\n")
+                        await broadcast({"type":"image_ready","url":url,"prompt":dalle_prompt,"italian_name":italian_name})
+                    except Exception as e:
+                        print(f"[ERROR] Unexpected error: {e}")
+                        await broadcast({"type":"error","message":f"Unexpected error: {str(e)}"})
+                        # Reset state to allow retry
+                        state["spinning"] = [True, True, True]
+                        state["result"] = [None, None, None]
+                else:
+                    print(f"[Handshake] Invalid state - cannot start generation")
+                    await broadcast({"type":"error","message":"Invalid state. Please reset and try again."})
 
             elif data.get("type") == "reset":
                 state["spinning"] = [True, True, True]

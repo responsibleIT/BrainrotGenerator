@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Brainrot Gallery</title>
   <style>
-    body { margin:0; font-family:ui-sans-serif,system-ui; background:#0a0a0a; color:#eee; cursor: none; }
-    header { padding:16px; text-align:center; background:#111; }
-    h1 { margin:0; font-size:28px; }
-    .main { padding:24px; }
-    .bigimg { display:block; max-width:100%; margin:0 auto 24px; border-radius:12px; box-shadow:0 0 20px #000; }
-    .meta { text-align:center; margin-bottom:24px; white-space:pre-wrap; }
-    .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-    .gallery img { width:100%; border-radius:8px; cursor:pointer; }
-    .backbtn { display:block; margin:32px auto; padding:12px 24px; font-size:18px; border:none; border-radius:8px; background:#5cf; color:#001018; font-weight:700; cursor:pointer; }
+  body { margin:0; font-family:ui-sans-serif,system-ui; background:#0a0a0a; color:#eee; cursor: none; }
+  header { padding:16px; text-align:center; background:#111; color:#ffcc33; font-family: "ironmonger-inlaid", sans-serif; font-weight: 400; font-style: normal; }
+  h1 { margin:0; font-size:28px; font-family: "ironmonger-inlaid", sans-serif; font-weight: 400; font-style: normal; color: #ffcc33; }
+  .main { padding:24px; }
+  .bigimg { display:block; max-width:100%; margin:0 auto 24px; border-radius:12px; box-shadow:0 0 20px #ffcc33; }
+  .meta { text-align:center; margin-bottom:24px; white-space:pre-wrap; color: #ffcc33; }
+  .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+  .gallery img { width:100%; border-radius:8px; cursor:pointer; border: 2px solid #ffcc33; box-shadow: 0 0 8px #ffcc3344; }
+  .backbtn { display:block; margin:32px auto; padding:12px 24px; font-size:18px; border:none; border-radius:8px; background:#ffcc33; color:#001018; font-weight:700; cursor:pointer; box-shadow: 0 2px 8px #ffcc3344; }
   </style>
 </head>
 <body>
@@ -44,6 +44,9 @@ async function loadGallery(){
         document.getElementById("mainImage").style.display="block";
         document.getElementById("mainImage").src=item.url;
         document.getElementById("meta").textContent=(item.italian_name||"")+" — "+(item.prompt||"");
+        // Add feedback for image selection
+        img.style.boxShadow = "0 0 24px #ffcc33";
+        setTimeout(()=>{ img.style.boxShadow = "0 0 8px #ffcc3344"; }, 400);
       };
       gal.appendChild(img);
     });
