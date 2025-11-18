@@ -35,7 +35,7 @@ slotmachine/
 │   │   ├── slot.css         # Slot machine specific
 │   │   └── gallery.css      # Gallery specific
 │   └── generated/           # Generated images & manifest
-├── setup/
+├── setup/ (Still needs to be tested)
 │   ├── DEPLOYMENT.md        # Complete Raspberry Pi guide
 │   ├── setup_pi.sh          # Auto-setup script
 │   └── setup_kiosk.sh       # Kiosk mode configuration
