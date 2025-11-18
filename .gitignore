@@ -1,6 +1,65 @@
+# Generated Images
 images/
-env/
+frontend/generated/
 *.png
+*.jpg
+*.jpeg
+
+# Python Virtual Environment
+env/
+venv/
+ENV/
+.venv
+
+# Python
 *.pyc
+*.pyo
+*.pyd
 __pycache__/
-generated/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3

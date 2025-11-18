@@ -1,4 +1,0 @@
-openai
-gradio
-requests
-pillow
