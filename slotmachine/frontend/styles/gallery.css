@@ -1,0 +1,77 @@
+/* Gallery Page Specific Styles */
+
+header { 
+    padding: 16px; 
+    text-align: center; 
+    background: #111; 
+    color: #ffcc33; 
+    font-family: "ironmonger-inlaid", sans-serif; 
+    font-weight: 400; 
+    font-style: normal; 
+}
+
+h1 { 
+    margin: 0; 
+    font-size: 28px; 
+    color: #ffcc33; 
+}
+
+h2 {
+    color: #ffcc33;
+}
+
+.main { 
+    padding: 24px; 
+}
+
+.bigimg { 
+    display: block; 
+    max-width: 100%; 
+    margin: 0 auto 24px; 
+    border-radius: 12px; 
+    box-shadow: 0 0 20px #ffcc33; 
+}
+
+.meta { 
+    text-align: center; 
+    margin-bottom: 24px; 
+    white-space: pre-wrap; 
+    color: #ffcc33; 
+}
+
+.gallery { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+    gap: 12px; 
+}
+
+.gallery img { 
+    width: 100%; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    border: 2px solid #ffcc33; 
+    box-shadow: 0 0 8px #ffcc3344; 
+    transition: box-shadow 0.3s ease;
+}
+
+.gallery img:hover {
+    box-shadow: 0 0 16px #ffcc33;
+}
+
+.backbtn { 
+    display: block; 
+    margin: 32px auto; 
+    padding: 12px 24px; 
+    font-size: 18px; 
+    border: none; 
+    border-radius: 8px; 
+    background: #ffcc33; 
+    color: #001018; 
+    font-weight: 700; 
+    cursor: pointer; 
+    box-shadow: 0 2px 8px #ffcc3344; 
+}
+
+.backbtn:hover {
+    box-shadow: 0 4px 16px #ffcc33;
+}

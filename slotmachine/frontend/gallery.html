@@ -4,17 +4,9 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Brainrot Gallery</title>
-  <style>
-  body { margin:0; font-family:ui-sans-serif,system-ui; background:#0a0a0a; color:#eee; cursor: none; }
-  header { padding:16px; text-align:center; background:#111; color:#ffcc33; font-family: "ironmonger-inlaid", sans-serif; font-weight: 400; font-style: normal; }
-  h1 { margin:0; font-size:28px; font-family: "ironmonger-inlaid", sans-serif; font-weight: 400; font-style: normal; color: #ffcc33; }
-  .main { padding:24px; }
-  .bigimg { display:block; max-width:100%; margin:0 auto 24px; border-radius:12px; box-shadow:0 0 20px #ffcc33; }
-  .meta { text-align:center; margin-bottom:24px; white-space:pre-wrap; color: #ffcc33; }
-  .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-  .gallery img { width:100%; border-radius:8px; cursor:pointer; border: 2px solid #ffcc33; box-shadow: 0 0 8px #ffcc3344; }
-  .backbtn { display:block; margin:32px auto; padding:12px 24px; font-size:18px; border:none; border-radius:8px; background:#ffcc33; color:#001018; font-weight:700; cursor:pointer; box-shadow: 0 2px 8px #ffcc3344; }
-  </style>
+  <link rel="stylesheet" href="https://use.typekit.net/ihx7ouu.css">
+  <link rel="stylesheet" href="/static/styles/common.css">
+  <link rel="stylesheet" href="/static/styles/gallery.css">
 </head>
 <body>
 <header><h1>Brainrot Gallery</h1></header>
@@ -62,21 +54,17 @@ function connectWebSocket(){
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
     
-    // Handle GPIO switch state changes - any switch state change navigates back to slot machine
     if (msg.type === 'gpio_press') {
-      const action = msg.action || 'activated';
-      console.log(`[Gallery] GPIO switch ${msg.reel} ${action} - navigating to slot machine`);
       window.location.href = '/';
     }
   };
   
   ws.onclose = () => {
-    console.log('[Gallery] WebSocket disconnected. Reconnecting...');
     setTimeout(connectWebSocket, 800);
   };
   
   ws.onerror = (error) => {
-    console.log('[Gallery] WebSocket error:', error);
+    console.error('[Gallery] WebSocket error:', error);
   };
 }
 
@@ -84,12 +72,10 @@ function connectWebSocket(){
 loadGallery();
 connectWebSocket();
 
-// Add keyboard support for testing (A, S, D keys simulate GPIO button presses)
 window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
   if (k === "a" || k === "s" || k === "d") {
     e.preventDefault();
-    console.log(`[Gallery] Keyboard ${k.toUpperCase()} pressed - navigating to slot machine`);
     window.location.href = '/';
   }
 });
