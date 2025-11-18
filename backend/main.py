@@ -15,7 +15,7 @@ ROLE_PROMPT = """You are a creator of artistic prompts for DALL·E 3 image gener
 You are generating a prompt to generate brainrot art.
 You will receive: (1) an animal, (2) a fruit, and (3) an object.
 Tasks:
-1) Generate an Italian-sounding name (no real people) based on the animal, fruit and object. Keep it tasteful, 2–4 words max.
+1) Generate an Italian-sounding name (no real people) based on the animal, fruit and object. Keep it tasteful, 2-4 words max.
 2) Write a vivid, specific prompt for DALL·E 3 that fuses the animal, fruit and object into a single coherent character with clear materials, textures, shapes, and composition. Describe how the animal and the fruit and object are merged. Avoid story; focus on visual description and style. Only include the character in the image. The background should be a simple color or gradient. The art style is oil painting.
 3) Do NOT include brands or copyrighted style names. Keep it PG-13.
 Return ONLY valid JSON with keys: italian_name, prompt.
@@ -86,7 +86,6 @@ try:
     loop = asyncio.get_event_loop()
 
     def gpio_emit(index: int, action: str):
-        print(f"[GPIO] Physical switch {action} for reel {index}")
         asyncio.run_coroutine_threadsafe(
             broadcast({"type":"gpio_press","reel": index, "action": action}),
             loop
@@ -194,10 +193,7 @@ async def ws_endpoint(ws: WebSocket):
                         await broadcast({"type":"all_stopped","result":state["result"]})
                         
             elif data.get("type") == "start_generation":
-                # Handshake: frontend confirms all reels stopped and ready to generate
-                print(f"[Handshake] Received start_generation. State: spinning={state['spinning']}, result={state['result']}")
                 if all(not s for s in state["spinning"]) and all(r is not None for r in state["result"]):
-                    print(f"[Handshake] Starting generation for {state['result']}")
                     try:
                         animal, fruit, obj = state["result"]
                         await broadcast({"type":"generation_started"})
@@ -244,7 +240,6 @@ async def ws_endpoint(ws: WebSocket):
                         state["spinning"] = [True, True, True]
                         state["result"] = [None, None, None]
                 else:
-                    print(f"[Handshake] Invalid state - cannot start generation")
                     await broadcast({"type":"error","message":"Invalid state. Please reset and try again."})
 
             elif data.get("type") == "reset":
