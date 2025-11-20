@@ -68,10 +68,12 @@
       let lastTS = performance.now();
       let cylEls = [];
       let badgeEls = [];
+
       // Track when the server has declared that all reels are stopped. We defer
       // showing the loading overlay until the final reel's animation and badge
       // have painted on screen.
       let allStoppedPending = false;
+
       // Helper to trigger generation after all reels stop
       function maybeShowOverlay() {
         if (allStoppedPending && spinning.every((v) => !v)) {
@@ -84,6 +86,7 @@
 
       function setResetDisabled(disabled) {
         const btn = document.getElementById("resetBtn");
+        console.log("setResetDisabled");
         if (btn) btn.disabled = disabled;
       }
 
@@ -109,6 +112,7 @@
         ws = new WebSocket(`ws://${location.host}/ws`);
         ws.onmessage = (ev) => {
           const msg = JSON.parse(ev.data);
+          console.log("msg", msg);
           if (msg.type === "init") initUI(msg.reels);
           // A physical switch state change from the server; capture the visible symbol and send
           // a stop_reel command on state change. This ensures that the spinning
@@ -134,6 +138,7 @@
           }
 
           if (msg.type === "reel_stopped") onReelStopped(msg.reel, msg.symbol);
+
           if (msg.type === "all_stopped") {
             // Set status and flag that backend is ready
             allStoppedPending = true;
@@ -142,7 +147,9 @@
             maybeShowOverlay();
             return;
           }
+
           if (msg.type === "generation_started") {
+            console.log("generation_started");
             setStatus("Generating your brainrot…");
             isGenerating = true;
             setResetDisabled(true);
@@ -151,6 +158,7 @@
               "Composing prompt & generating image."
             );
           }
+
           if (msg.type === "image_ready") {
             isGenerating = false;
             setResetDisabled(false);
@@ -163,6 +171,7 @@
               "&prompt=" +
               encodeURIComponent(msg.prompt);
           }
+
           if (msg.type === "error") {
             isGenerating = false;
             setResetDisabled(false);
@@ -173,12 +182,15 @@
               .querySelectorAll("button")
               .forEach((b) => (b.disabled = false));
           }
+
           if (msg.type === "reset_blocked") {
             setStatus("Already generating—please wait for your image.");
           }
+
           if (msg.type === "generation_busy") {
             setStatus("Still working on your current image…");
           }
+          
         };
         ws.onclose = () => {
           setStatus("Disconnected. Reconnecting…");

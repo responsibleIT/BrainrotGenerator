@@ -201,6 +201,7 @@ async def ws_endpoint(ws: WebSocket):
                 if all(not s for s in state["spinning"]) and all(r is not None for r in state["result"]):
                     state["generating"] = True
                     try:
+                        print("start_generation")
                         animal, fruit, obj = state["result"]
                         await broadcast({"type":"generation_started"})
                         
