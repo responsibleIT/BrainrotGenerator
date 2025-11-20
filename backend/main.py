@@ -1,4 +1,5 @@
 import os, time, json, hashlib, datetime, requests
+from functools import partial
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -37,7 +38,8 @@ REELS = {
 state = {
     "spinning": [True, True, True],
     "result":   [None, None, None],
-    "session_seed": 0
+    "session_seed": 0,
+    "generating": False,
 }
 
 app = FastAPI()
@@ -165,6 +167,7 @@ async def ws_endpoint(ws: WebSocket):
     state["spinning"] = [True, True, True]
     state["result"] = [None, None, None]
     state["session_seed"] = int(time.time() * 1000) % 1000000
+    state["generating"] = False
 
     try:
         await ws.send_text(json.dumps({"type":"init","reels":REELS}))
@@ -193,15 +196,21 @@ async def ws_endpoint(ws: WebSocket):
                         await broadcast({"type":"all_stopped","result":state["result"]})
                         
             elif data.get("type") == "start_generation":
+                if state["generating"]:
+                    await ws.send_text(json.dumps({"type":"error","message":"Generation already in progress. Please wait."}))
+                    continue
                 if all(not s for s in state["spinning"]) and all(r is not None for r in state["result"]):
                     try:
                         animal, fruit, obj = state["result"]
+                        state["generating"] = True
                         await broadcast({"type":"generation_started"})
                         
                         # Generate prompt with retry logic
                         try:
-                            italian_name, dalle_prompt = generate_prompt_and_name(
-                                animal, fruit, obj
+                            loop = asyncio.get_running_loop()
+                            italian_name, dalle_prompt = await loop.run_in_executor(
+                                None,
+                                partial(generate_prompt_and_name, animal, fruit, obj)
                             )
                         except Exception as e:
                             print(f"[ERROR] Prompt generation failed: {e}")
@@ -209,17 +218,22 @@ async def ws_endpoint(ws: WebSocket):
                             # Reset state to allow retry
                             state["spinning"] = [True, True, True]
                             state["result"] = [None, None, None]
+                            state["generating"] = False
                             continue
                         
                         # Generate image with better error handling
                         try:
-                            img_path = generate_image(dalle_prompt)
+                            img_path = await loop.run_in_executor(
+                                None,
+                                partial(generate_image, dalle_prompt)
+                            )
                         except Exception as e:
                             print(f"[ERROR] Image generation failed: {e}")
                             await broadcast({"type":"error","message":f"Failed to generate image: {str(e)}"})
                             # Reset state to allow retry
                             state["spinning"] = [True, True, True]
                             state["result"] = [None, None, None]
+                            state["generating"] = False
                             continue
                         
                         url = "/static/generated/" + os.path.basename(img_path)
@@ -233,19 +247,25 @@ async def ws_endpoint(ws: WebSocket):
                         with open(manifest_path,"a",encoding="utf-8") as mf:
                             mf.write(json.dumps(entry)+"\n")
                         await broadcast({"type":"image_ready","url":url,"prompt":dalle_prompt,"italian_name":italian_name})
+                        state["generating"] = False
                     except Exception as e:
                         print(f"[ERROR] Unexpected error: {e}")
                         await broadcast({"type":"error","message":f"Unexpected error: {str(e)}"})
                         # Reset state to allow retry
                         state["spinning"] = [True, True, True]
                         state["result"] = [None, None, None]
+                        state["generating"] = False
                 else:
                     await broadcast({"type":"error","message":"Invalid state. Please reset and try again."})
 
             elif data.get("type") == "reset":
+                if state["generating"]:
+                    await ws.send_text(json.dumps({"type":"error","message":"Cannot reset while generation is running."}))
+                    continue
                 state["spinning"] = [True, True, True]
                 state["result"] = [None, None, None]
                 state["session_seed"] = 0
+                state["generating"] = False
                 await broadcast({"type":"reset_ok"})
     finally:
         clients.discard(ws)
