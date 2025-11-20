@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Brainrot Slot Machine</title>
-<link rel="stylesheet" href="https://use.typekit.net/ihx7ouu.css">
+<!-- <link rel="stylesheet" href="https://use.typekit.net/ihx7ouu.css"> -->
 <link rel="stylesheet" href="/static/styles/common.css">
 <link rel="stylesheet" href="/static/styles/slot.css">
 </head>
@@ -49,6 +49,7 @@ let rotX = [0,0,0];
 let lastTS = performance.now();
 let cylEls = [];
 let badgeEls = [];
+let generationInProgress = false;
 // Track when the server has declared that all reels are stopped. We defer
 // showing the loading overlay until the final reel's animation and badge
 // have painted on screen.
@@ -79,8 +80,12 @@ function hideOverlay(){
 
 function connect(){
   ws = new WebSocket(`ws://${location.host}/ws`);
+  
   ws.onmessage = (ev)=>{
     const msg = JSON.parse(ev.data);
+
+    console.log(msg);
+
     if (msg.type === 'init') initUI(msg.reels);
     // A physical switch state change from the server; capture the visible symbol and send
     // a stop_reel command on state change. This ensures that the spinning
@@ -100,7 +105,9 @@ function connect(){
       }
     }
 
-    if (msg.type === 'reel_stopped') onReelStopped(msg.reel, msg.symbol);
+    if (msg.type === 'reel_stopped') 
+        onReelStopped(msg.reel, msg.symbol);
+
     if (msg.type === 'all_stopped') {
       // Set status and flag that backend is ready
       allStoppedPending = true;
@@ -109,30 +116,58 @@ function connect(){
       maybeShowOverlay();
       return;
     }
+
     if (msg.type === 'generation_started') {
+      generationInProgress = true;
+      setResetDisabled(true);
       setStatus("Generating your brainrot…");
       showOverlay("Brewing your brainrot…","Composing prompt & generating image.");
     }
+
     if (msg.type === 'image_ready') {
+      generationInProgress = false;
+      setResetDisabled(false);
       hideOverlay();
       window.location.href = "/gallery.html?url=" + encodeURIComponent(msg.url)
                            + "&name=" + encodeURIComponent(msg.italian_name)
                            + "&prompt=" + encodeURIComponent(msg.prompt);
     }
+
     if (msg.type === 'error') {
+      generationInProgress = false;
+      setResetDisabled(false);
       hideOverlay();
       setStatus("⚠️ " + msg.message + " Click Reset to try again.");
       // Auto-enable reset button on error
       document.querySelectorAll('button').forEach(b => b.disabled = false);
     }
+
+    if (msg.type === 'reset_ok') {
+      generationInProgress = false;
+      setResetDisabled(false);
+    }
+
   };
+
   ws.onclose = ()=>{
     setStatus("Disconnected. Reconnecting…");
     hideOverlay();
+    generationInProgress = false;
+    setResetDisabled(false);
     setTimeout(connect, 800);
   };
+
 }
-function setStatus(s){ document.getElementById('status').textContent = s; }
+
+function setStatus(s){
+    document.getElementById('status').textContent = s; 
+}
+
+function setResetDisabled(disabled){
+  const btn = document.getElementById('resetBtn');
+  if (btn) btn.disabled = !!disabled;
+}
+
 function buildCylinder(i){
   const cyl = document.getElementById(`cyl${i}`);
   cyl.innerHTML = "";
@@ -146,6 +181,7 @@ function buildCylinder(i){
   cyl.dataset.step = step.toString();
   rotX[i] = 0; cyl.style.transform = `rotateX(${rotX[i]}deg)`;
 }
+
 function initUI(reelData){
   reels = [reelData[0], reelData[1], reelData[2]];
   cylEls = [document.getElementById('cyl0'), document.getElementById('cyl1'), document.getElementById('cyl2')];
@@ -153,6 +189,7 @@ function initUI(reelData){
   for (let i=0;i<3;i++) buildCylinder(i);
   lastTS = performance.now(); requestAnimationFrame(tick);
 }
+
 function tick(now){
   const dt = now - lastTS; lastTS = now;
   for (let i=0;i<3;i++){
@@ -162,6 +199,7 @@ function tick(now){
   }
   requestAnimationFrame(tick);
 }
+
 function currentSymbol(i){
   const list = reels[i];
   const n = list.length;
@@ -197,11 +235,17 @@ function onReelStopped(i,symbol){
   maybeShowOverlay();
 }
 function resetAll(){
+  if (generationInProgress) {
+    setStatus("Generation in progress. Please wait…");
+    return;
+  }
   badgeEls.forEach(b=>{ b.classList.remove('show'); b.style.display='none'; b.textContent='Stopped';});
   spinning=[true,true,true];
   setStatus("Ready. Stop each reel with your chosen symbol.");
   hideOverlay();
   document.querySelectorAll('button:not(.primary)').forEach(b=>b.disabled=false);
+  setResetDisabled(false);
+  generationInProgress = false;
   if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:"reset"}));
 }
 connect();
