@@ -61,6 +61,7 @@
       const ROW_H = 92;
       const ROT_SPEEDS = [0.025, 0.025, 0.025]; // deg/ms
       let ws;
+      let isGenerating = false;
       let reels = [[], [], []];
       let spinning = [true, true, true];
       let rotX = [0, 0, 0];
@@ -80,6 +81,12 @@
           }
         }
       }
+
+      function setResetDisabled(disabled) {
+        const btn = document.getElementById("resetBtn");
+        if (btn) btn.disabled = disabled;
+      }
+
       // Loading overlay helpers
       function showOverlay(
         title = "Brewing your brainrot…",
@@ -137,12 +144,16 @@
           }
           if (msg.type === "generation_started") {
             setStatus("Generating your brainrot…");
+            isGenerating = true;
+            setResetDisabled(true);
             showOverlay(
               "Brewing your brainrot…",
               "Composing prompt & generating image."
             );
           }
           if (msg.type === "image_ready") {
+            isGenerating = false;
+            setResetDisabled(false);
             hideOverlay();
             window.location.href =
               "/gallery.html?url=" +
@@ -153,6 +164,8 @@
               encodeURIComponent(msg.prompt);
           }
           if (msg.type === "error") {
+            isGenerating = false;
+            setResetDisabled(false);
             hideOverlay();
             setStatus("⚠️ " + msg.message + " Click Reset to try again.");
             // Auto-enable reset button on error
@@ -160,16 +173,26 @@
               .querySelectorAll("button")
               .forEach((b) => (b.disabled = false));
           }
+          if (msg.type === "reset_blocked") {
+            setStatus("Already generating—please wait for your image.");
+          }
+          if (msg.type === "generation_busy") {
+            setStatus("Still working on your current image…");
+          }
         };
         ws.onclose = () => {
           setStatus("Disconnected. Reconnecting…");
           hideOverlay();
+          isGenerating = false;
+          setResetDisabled(false);
           setTimeout(connect, 800);
         };
       }
+
       function setStatus(s) {
         document.getElementById("status").textContent = s;
       }
+
       function buildCylinder(i) {
         const cyl = document.getElementById(`cyl${i}`);
         cyl.innerHTML = "";
@@ -190,6 +213,7 @@
         rotX[i] = 0;
         cyl.style.transform = `rotateX(${rotX[i]}deg)`;
       }
+
       function initUI(reelData) {
         reels = [reelData[0], reelData[1], reelData[2]];
         cylEls = [
@@ -206,6 +230,7 @@
         lastTS = performance.now();
         requestAnimationFrame(tick);
       }
+
       function tick(now) {
         const dt = now - lastTS;
         lastTS = now;
@@ -217,6 +242,7 @@
         }
         requestAnimationFrame(tick);
       }
+
       function currentSymbol(i) {
         const list = reels[i];
         const n = list.length;
@@ -225,6 +251,7 @@
         const wrapped = (idx + n) % n;
         return list[wrapped];
       }
+
       function stopReel(i) {
         if (!spinning[i] || !ws || ws.readyState !== 1) return;
         spinning[i] = false;
@@ -238,6 +265,7 @@
             .forEach((b) => (b.disabled = true));
         }
       }
+
       function onReelStopped(i, symbol) {
         spinning[i] = false;
         badgeEls[i].textContent = `Stopped: ${symbol}`;
@@ -257,8 +285,12 @@
 
         maybeShowOverlay();
       }
-      
+
       function resetAll() {
+        if (isGenerating) {
+          setStatus("Still generating—please wait for your image.");
+          return;
+        }
         badgeEls.forEach((b) => {
           b.classList.remove("show");
           b.style.display = "none";
@@ -267,12 +299,14 @@
         spinning = [true, true, true];
         setStatus("Ready. Stop each reel with your chosen symbol.");
         hideOverlay();
+        setResetDisabled(false);
         document
           .querySelectorAll("button:not(.primary)")
           .forEach((b) => (b.disabled = false));
         if (ws && ws.readyState === 1)
           ws.send(JSON.stringify({ type: "reset" }));
       }
+
       connect();
     </script>
 
@@ -340,7 +374,7 @@
         // Keyboard shortcuts
         window.addEventListener("keydown", (e) => {
           const k = e.key.toLowerCase();
-          if (k === "r") {
+          if (k === "w") {
             e.preventDefault();
             if (typeof window.resetAll === "function") window.resetAll();
           }
@@ -356,11 +390,7 @@
             e.preventDefault();
             window.stopReel?.(2);
           }
-          if (k === "w") {
-            e.preventDefault();
-            resetAll();
-            console.log("resetAll");
-          }
+         
         });
       })();
     </script>

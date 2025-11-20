@@ -37,7 +37,8 @@ REELS = {
 state = {
     "spinning": [True, True, True],
     "result":   [None, None, None],
-    "session_seed": 0
+    "session_seed": 0,
+    "generating": False,
 }
 
 app = FastAPI()
@@ -165,6 +166,7 @@ async def ws_endpoint(ws: WebSocket):
     state["spinning"] = [True, True, True]
     state["result"] = [None, None, None]
     state["session_seed"] = int(time.time() * 1000) % 1000000
+    state["generating"] = False
 
     try:
         await ws.send_text(json.dumps({"type":"init","reels":REELS}))
@@ -193,7 +195,11 @@ async def ws_endpoint(ws: WebSocket):
                         await broadcast({"type":"all_stopped","result":state["result"]})
                         
             elif data.get("type") == "start_generation":
+                if state["generating"]:
+                    await ws.send_text(json.dumps({"type":"generation_busy"}))
+                    continue
                 if all(not s for s in state["spinning"]) and all(r is not None for r in state["result"]):
+                    state["generating"] = True
                     try:
                         animal, fruit, obj = state["result"]
                         await broadcast({"type":"generation_started"})
@@ -239,10 +245,15 @@ async def ws_endpoint(ws: WebSocket):
                         # Reset state to allow retry
                         state["spinning"] = [True, True, True]
                         state["result"] = [None, None, None]
+                    finally:
+                        state["generating"] = False
                 else:
-                    await broadcast({"type":"error","message":"Invalid state. Please reset and try again."})
+                    await ws.send_text(json.dumps({"type":"error","message":"Invalid state. Please reset and try again."}))
 
             elif data.get("type") == "reset":
+                if state["generating"]:
+                    await ws.send_text(json.dumps({"type":"reset_blocked","reason":"generation_in_progress"}))
+                    continue
                 state["spinning"] = [True, True, True]
                 state["result"] = [None, None, None]
                 state["session_seed"] = 0
