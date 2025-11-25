@@ -54,11 +54,6 @@ button:disabled {
     cursor: not-allowed; 
 }
 
-/* Animations */
-@keyframes spin { 
-    to { transform: rotate(360deg); } 
-}
-
 @keyframes pulse { 
     0%, 100% { opacity: 0.25; } 
     50% { opacity: 0.9; } 
