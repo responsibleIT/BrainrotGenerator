@@ -27,6 +27,11 @@ h1, h2, h3, header {
     font-style: normal;
 }
 
+/* hiding controls & title */
+header, footer.controls{
+    display: none !important;
+}
+
 /* Buttons */
 button { 
     font-size: 22px; 
