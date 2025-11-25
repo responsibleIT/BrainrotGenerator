@@ -69,8 +69,6 @@ function maybeShowOverlay(){
 // Loading overlay helpers
 function showOverlay(title="Brewing your brainrot…", sub="Composing prompt & generating image.") {
   const o = document.getElementById('loadingOverlay');
-  document.getElementById('loadingTitle').textContent = title;
-  document.getElementById('loadingSub').textContent = sub;
   o.classList.add('show');
   o.setAttribute('aria-hidden', 'false');
 }
