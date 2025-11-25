@@ -1,84 +1,104 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Brainrot Gallery</title>
-  <link rel="stylesheet" href="https://use.typekit.net/ihx7ouu.css">
-  <link rel="stylesheet" href="/static/styles/common.css">
-  <link rel="stylesheet" href="/static/styles/gallery.css">
-</head>
-<body>
-<header><h1>Brainrot Gallery</h1></header>
-<div class="main">
-  <div class="meta" id="meta"></div>
-  <img id="mainImage" class="bigimg" src="" alt="Generated"/>
-  <h2>All Images</h2>
-  <div id="gallery" class="gallery"></div>
-  <button class="backbtn" onclick="window.location.href='/'">🎰 Back to Slot</button>
-</div>
-<script>
-function qs(name){ const url=new URL(window.location.href); return url.searchParams.get(name)||""; }
-const imgUrl=qs("url"), italian=qs("name"), prompt=qs("prompt");
-if(imgUrl){ document.getElementById("mainImage").src=imgUrl; document.getElementById("meta").textContent=italian+" — "+prompt; }
-else{ document.getElementById("meta").textContent="Select an image below to view details."; document.getElementById("mainImage").style.display="none"; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Brainrot Gallery</title>
+    <link rel="stylesheet" href="https://use.typekit.net/ihx7ouu.css" />
+    <link rel="stylesheet" href="/static/styles/common.css" />
+    <link rel="stylesheet" href="/static/styles/gallery.css" />
+  </head>
+  <body>
+    <div class="main">
+      <img id="mainImage" class="bigimg" src="" alt="Generated" />
 
-async function loadGallery(){
-  try{
-    const res = await fetch("/gallery_manifest");
-    const data = await res.json();
-    const gal=document.getElementById("gallery");
-    data.reverse().forEach(item=>{
-      const img=document.createElement("img");
-      img.src=item.url;
-      img.title=item.italian_name || "";
-      img.onclick=()=>{
-        document.getElementById("mainImage").style.display="block";
-        document.getElementById("mainImage").src=item.url;
-        document.getElementById("meta").textContent=(item.italian_name||"")+" — "+(item.prompt||"");
-        // Add feedback for image selection
-        img.style.boxShadow = "0 0 24px #ffcc33";
-        setTimeout(()=>{ img.style.boxShadow = "0 0 8px #ffcc3344"; }, 400);
-      };
-      gal.appendChild(img);
-    });
-  }catch(e){ console.error("Failed to load manifest", e); }
-}
+      <header><h1>Brainrot Gallery</h1></header>
+      <div class="meta" id="meta"></div>
 
-// WebSocket connection for GPIO button handling
-let ws;
+      <h2>All Images</h2>
+      <div id="gallery" class="gallery"></div>
+      <button class="backbtn" onclick="window.location.href='/'">
+        🎰 Back to Slot
+      </button>
+    </div>
+    <script>
+      function qs(name) {
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name) || "";
+      }
+      const imgUrl = qs("url"),
+        italian = qs("name"),
+        prompt = qs("prompt");
+      if (imgUrl) {
+        document.getElementById("mainImage").src = imgUrl;
+        document.getElementById("meta").textContent = italian + " — " + prompt;
+      } else {
+        document.getElementById("meta").textContent =
+          "Select an image below to view details.";
+        document.getElementById("mainImage").style.display = "none";
+      }
 
-function connectWebSocket(){
-  ws = new WebSocket(`ws://${location.host}/ws`);
-  
-  ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    
-    if (msg.type === 'gpio_press') {
-      window.location.href = '/';
-    }
-  };
-  
-  ws.onclose = () => {
-    setTimeout(connectWebSocket, 800);
-  };
-  
-  ws.onerror = (error) => {
-    console.error('[Gallery] WebSocket error:', error);
-  };
-}
+      async function loadGallery() {
+        try {
+          const res = await fetch("/gallery_manifest");
+          const data = await res.json();
+          const gal = document.getElementById("gallery");
+          data.reverse().forEach((item) => {
+            const img = document.createElement("img");
+            img.src = item.url;
+            img.title = item.italian_name || "";
+            img.onclick = () => {
+              document.getElementById("mainImage").style.display = "block";
+              document.getElementById("mainImage").src = item.url;
+              document.getElementById("meta").textContent =
+                (item.italian_name || "") + " — " + (item.prompt || "");
+              // Add feedback for image selection
+              img.style.boxShadow = "0 0 24px #ffcc33";
+              setTimeout(() => {
+                img.style.boxShadow = "0 0 8px #ffcc3344";
+              }, 400);
+            };
+            gal.appendChild(img);
+          });
+        } catch (e) {
+          console.error("Failed to load manifest", e);
+        }
+      }
 
-// Initialize gallery and WebSocket connection
-loadGallery();
-connectWebSocket();
+      // WebSocket connection for GPIO button handling
+      let ws;
 
-window.addEventListener("keydown", (e) => {
-  const k = e.key.toLowerCase();
-  if (k === "a" || k === "s" || k === "d") {
-    e.preventDefault();
-    window.location.href = '/';
-  }
-});
-</script>
-</body>
+      function connectWebSocket() {
+        ws = new WebSocket(`ws://${location.host}/ws`);
+
+        ws.onmessage = (ev) => {
+          const msg = JSON.parse(ev.data);
+
+          if (msg.type === "gpio_press") {
+            window.location.href = "/";
+          }
+        };
+
+        ws.onclose = () => {
+          setTimeout(connectWebSocket, 800);
+        };
+
+        ws.onerror = (error) => {
+          console.error("[Gallery] WebSocket error:", error);
+        };
+      }
+
+      // Initialize gallery and WebSocket connection
+      loadGallery();
+      connectWebSocket();
+
+      window.addEventListener("keydown", (e) => {
+        const k = e.key.toLowerCase();
+        if (k === "a" || k === "s" || k === "d") {
+          e.preventDefault();
+          window.location.href = "/";
+        }
+      });
+    </script>
+  </body>
 </html>
