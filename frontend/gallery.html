@@ -92,13 +92,13 @@
       loadGallery();
       connectWebSocket();
 
-      window.addEventListener("keydown", (e) => {
-        const k = e.key.toLowerCase();
-        if (k === "a" || k === "s" || k === "d") {
-          e.preventDefault();
-          window.location.href = "/";
-        }
-      });
-    </script>
-  </body>
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+  if (k === "w") {
+    e.preventDefault();
+    window.location.href = '/';
+  }
+});
+</script>
+</body>
 </html>

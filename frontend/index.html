@@ -303,7 +303,7 @@ connect();
   // Keyboard shortcuts
   window.addEventListener("keydown", (e)=>{
     const k = e.key.toLowerCase();
-    if (k === "r") { e.preventDefault(); if (typeof window.resetAll === "function") window.resetAll(); }
+    if (k === "w") { e.preventDefault(); if (typeof window.resetAll === "function") window.resetAll(); }
     if (k === "a") { e.preventDefault(); window.stopReel?.(0); }
     if (k === "s") { e.preventDefault(); window.stopReel?.(1); }
     if (k === "d") { e.preventDefault(); window.stopReel?.(2); }
